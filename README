@@ -1,0 +1,276 @@
+NAME
+    Math::Vec - Object-Oriented Vector Math Methods in Perl
+
+SYNOPSIS
+      use Math::Vec;
+      $v = Math::Vec->new(0,1,2);
+
+      or
+
+      use Math::Vec qw(NewVec);
+      $v = NewVec(0,1,2);
+
+NOTICE
+    This module is still somewhat incomplete. If a function does nothing,
+    there is likely a really good reason. Please have a look at the code if
+    you are trying to use this in a production environment.
+
+AUTHOR
+    Eric Wilhelm <ewilhelm at sbcglobal dot net>
+
+DESCRIPTION
+    This module was adapted from Math::Vector, written by Wayne M. Syvinski.
+
+    It uses most of the same algorithms, and currently preserves the same
+    names as the original functions, though some aliases have been added to
+    make the interface more natural (at least to the way I think.)
+
+    The "object" for the object oriented calling style is a blessed array
+    reference which contains a vector of the form [x,y,z]. Methods will
+    typically return a list.
+
+COPYRIGHT NOTICE
+    Copyright (C) 2003 Eric Wilhelm
+
+    portions Copyright 2003 Wayne M. Syvinski
+
+NO WARRANTY
+    Absolutely, positively NO WARRANTY, neither express or implied, is
+    offered with this software. You use this software at your own risk. In
+    case of loss, neither Wayne M. Syvinski, Eric Wilhelm, nor anyone else,
+    owes you anything whatseover. You have been warned.
+
+    Note that this includes NO GUARANTEE of MATHEMATICAL CORRECTNESS. If you
+    are going to use this code in a production environment, it is YOUR
+    RESPONSIBILITY to verify that the methods return the correct values.
+
+LICENSE
+    You may use this software under one of the following licenses:
+
+      (1) GNU General Public License 
+        (found at http://www.gnu.org/copyleft/gpl.html) 
+      (2) Artistic License 
+        (found at http://www.perl.com/pub/language/misc/Artistic.html)
+
+Dependencies
+      Math::Complex;
+
+INSTALLATION
+    To install this module, type the following.
+
+      perl Makefile.PL
+      make
+      make test
+      make install
+
+    Note that the tests currently do very little. If you would like to write
+    some tests, I would be happy to include them in the distribution.
+
+SEE ALSO
+      Math::Vector
+
+Constructor
+  new
+
+    Returns a blessed array reference to cartesian point ($x, $y, $z), where
+    $z is optional. Note the feed-me-list, get-back-reference syntax here.
+    This is the opposite of the rest of the methods for a good reason (it
+    allows nesting of function calls.)
+
+    Implied zeros are a strong theme in this module, so it may not do well
+    under the warnings pragma. I see this as part of the adventure.
+
+      $vec = Math::Vec->new($x, $y, $z);
+
+  NewVec
+
+    This is simply a shortcut to Math::Vec->new($x, $y, $z) for those of you
+    who don't want to type so much so often. This also makes it easier to
+    nest / chain your function calls. Note that methods will typically
+    output lists (e.g. the answer to your question.) While you can simply
+    [bracket] the answer to make an array reference, you need that to be
+    blessed in order to use the $object->method(@args) syntax. This function
+    does that blessing.
+
+    This function is exported as an option. To use it, simply use Math::Vec
+    qw(NewVec); at the start of your code.
+
+      use Math::Vec qw(NewVec);
+      $vec = NewVec($x, $y, $z);
+      $diff = NewVec($vec->Minus([$ovec->ScalarMult(0.5)]));
+
+Methods
+    The typical theme is that methods require array references and return
+    lists. This means that you can choose whether to create an anonymous
+    array ref for use in feeding back into another function call, or you can
+    simply use the list as-is. Methods which return a scalar or list of
+    scalars (in the mathematical sense, not the Perl SV sense) are exempt
+    from this theme, but methods which return what could become one vector
+    will return it as a list.
+
+    If you want to chain calls together, either use the NewVec constructor,
+    or enclose the call in square brackets to make an anonymous array out of
+    the result.
+
+      my $vec = NewVec(@pt);
+      my $doubled = NewVec($vec->ScalarMult(0.5));
+      my $other = NewVec($vec->Plus([0,2,1], [4,2,3]));
+      my @result = $other->Minus($doubled);
+      $unit = NewVec(NewVec(@result)->UnitVector());
+
+    The vector objects are simply blessed array references. This makes for a
+    fairly limited amount of manipulation, but vector math is not
+    complicated stuff. Hopefully, you can save at least two lines of code
+    per calculation using this module.
+
+  Dot
+
+    Alias to DotProduct()
+
+      $vec->Dot($othervec);
+
+  DotProduct
+
+    Returns the dot product of $vec 'dot' $othervec.
+
+      $vec->DotProduct($othervec);
+
+  Cross
+
+    Returns $vec x $other_vec
+
+      $vec->Cross($other_vec);
+
+  CrossProduct
+
+      $vec->CrossProduct();
+
+  Length
+
+    Returns the length of $vec
+
+      $length = $vec->Length();
+
+  Magnitude
+
+      $vec->Magnitude();
+
+  UnitVector
+
+      $vec->UnitVector();
+
+  ScalarMult
+
+    Factors each element of $vec by $factor.
+
+      @new = $vec->ScalarMult($factor);
+
+  Minus
+
+    Subtracts an arbitrary number of vectors.
+
+      @result = $vec->Minus($other_vec, $another_vec?);
+
+    This would be equivelant to:
+
+      @result = $vec->Minus([$other_vec->Plus(@list_of_vectors)]);
+
+  VecSub
+
+    Alias to Minus()
+
+      $vec->VecSub();
+
+  InnerAngle
+
+    Returns the acute angle (in radians) in the plane defined by the two
+    vectors.
+
+      $vec->InnerAngle($other_vec);
+
+  DirAngles
+
+      $vec->DirAngles();
+
+  Plus
+
+    Adds an arbitrary number of vectors.
+
+      @result = $vec->Plus($other_vec, $another_vec);
+
+  PlanarAngles
+
+    If called in list context, returns the angle of the vector in each of
+    the primary planes. If called in scalar context, returns only the angle
+    in the xy plane. Angles are returned in radians counter-clockwise from
+    the primary axis (the one listed first in the pairs below.)
+
+      ($xy_ang, $xz_ang, $yz_ang) = $vec->PlanarAngles();
+
+  Ang
+
+    A simpler alias to PlanarAngles() which eliminates the concerns about
+    context and simply returns the angle in the xy plane.
+
+      $xy_ang = $vec->Ang();
+
+  VecAdd
+
+      $vec->VecAdd();
+
+  UnitVectorPoints
+
+    Returns a unit vector which points from $A to $B.
+
+      $A->UnitVectorPoints($B);
+
+  InnerAnglePoints
+
+    Returns the InnerAngle() between the three points. $Vert is the vertex
+    of the points.
+
+      $Vert->InnerAnglePoints($endA, $endB);
+
+  PlaneUnitNormal
+
+    Returns a unit vector normal to the plane described by the three points.
+    The sense of this vector is according to the right-hand rule and the
+    order of the given points. The $Vert vector is taken as the vertex of
+    the three points. e.g. if $Vert is the origin of a coordinate system
+    where the x-axis is $A and the y-axis is $B, then the return value would
+    be a unit vector along the positive z-axis.
+
+      $Vert->PlaneUnitNormal($A, $B);
+
+  TriAreaPoints
+
+    Returns the angle of the triangle formed by the three points.
+
+      $A->TriAreaPoints($B, $C);
+
+Incomplete Methods
+    The following have yet to be translated into this interface. They are
+    shown here simply because I intended to fully preserve the function
+    names from the original Math::Vector module written by Wayne M.
+    Syvinski.
+
+  TripleProduct
+
+      $vec->TripleProduct();
+
+  IJK
+
+      $vec->IJK();
+
+  OrdTrip
+
+      $vec->OrdTrip();
+
+  STV
+
+      $vec->STV();
+
+  Equil
+
+      $vec->Equil();
+
