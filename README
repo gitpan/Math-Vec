@@ -69,6 +69,14 @@ INSTALLATION
 SEE ALSO
       Math::Vector
 
+CHANGES
+      0.01
+        First Public Release
+
+      0.02
+        Fixed incorrect DotProduct() (thanks to Nao-Yuki Tanabe.)
+        Added length != 0 check to Comp()
+
 Constructor
   new
 
@@ -247,6 +255,26 @@ Methods
     Returns the angle of the triangle formed by the three points.
 
       $A->TriAreaPoints($B, $C);
+
+  Comp
+
+    Returns the scalar projection of $B onto $A (also called the component
+    of $B along $A.)
+
+      $A->Comp($B);
+
+  Proj
+
+    Returns the vector projection of $B onto $A.
+
+      $A->Proj($B);
+
+  PerpFoot
+
+    Returns a point on line $A,$B which is as close to $pt as possible (and
+    therefore perpendicular to the line.
+
+      $pt->PerpFoot($A, $B);
 
 Incomplete Methods
     The following have yet to be translated into this interface. They are

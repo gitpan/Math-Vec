@@ -1,5 +1,5 @@
 package Math::Vec;
-our $VERSION   = '0.01';
+our $VERSION   = '0.02';
 
 =pod
 
@@ -84,6 +84,15 @@ write some tests, I would be happy to include them in the distribution.
 =head1 SEE ALSO
 
   Math::Vector
+
+=head1 CHANGES
+
+  0.01
+    First Public Release
+
+  0.02
+    Fixed incorrect DotProduct() (thanks to Nao-Yuki Tanabe.)
+    Added length != 0 check to Comp()
 
 =cut
 
@@ -204,7 +213,7 @@ sub DotProduct {
 	my Math::Vec $self = shift;
 	my ($operand) = @_;
 	my @r = map( {$self->[$_] * $operand->[$_]} 0,1,2);
-	return( $r[0] + $r[1] + $r[1]);
+	return( $r[0] + $r[1] + $r[2]);
 } # end subroutine DotProduct definition
 ########################################################################
 
@@ -490,6 +499,54 @@ sub TriAreaPoints {
 	my $tail = NewVec($A->Minus($C));
 	return(NewVec($lead->Cross($tail))->Length() / 2);
 } # end subroutine TriAreaPoints definition
+########################################################################
+
+=head2 Comp
+
+Returns the scalar projection of $B onto $A (also called the component
+of $B along $A.)
+
+  $A->Comp($B);
+
+=cut
+sub Comp {
+	my $self = shift;
+	my $B = shift;
+	my $length = $self->Length();
+	$length || croak("cannot Comp() vector without length");
+	return($self->Dot($B) / $length);
+} # end subroutine Comp definition
+########################################################################
+
+=head2 Proj
+
+Returns the vector projection of $B onto $A.
+
+  $A->Proj($B);
+
+=cut
+sub Proj {
+	my $self = shift;
+	my $B = shift;
+	return(NewVec($self->UnitVector())->ScalarMult($self->Comp($B)));
+} # end subroutine Proj definition
+########################################################################
+
+=head2 PerpFoot
+
+Returns a point on line $A,$B which is as close to $pt as possible (and therefore perpendicular to the line.
+
+  $pt->PerpFoot($A, $B);
+
+=cut
+sub PerpFoot {
+	my $pt = shift;
+	my ($A, $B) = @_;
+	$pt = NewVec($pt->Minus($A));
+	$B = NewVec(NewVec(@$B)->Minus($A));
+	my $proj = NewVec($B->Proj($pt));
+	return($proj->Plus($A));
+} # end subroutine PerpFoot definition
 ########################################################################
 
 =head1 Incomplete Methods
