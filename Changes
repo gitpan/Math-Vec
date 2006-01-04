@@ -1,0 +1,12 @@
+0.03
+	Setup to run clean under 'use warnings'.
+	Added overloading and :terse functions.
+	More tests.
+
+0.02
+	Fixed incorrect DotProduct() (thanks to Nao-Yuki Tanabe.)
+	Added length != 0 check to Comp()
+
+
+0.01
+	First Public Release

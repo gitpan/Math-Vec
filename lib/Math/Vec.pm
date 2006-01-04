@@ -1,5 +1,5 @@
 package Math::Vec;
-our $VERSION   = '0.02';
+our $VERSION   = '0.03';
 
 =pod
 
@@ -16,6 +16,15 @@ Math::Vec - Object-Oriented Vector Math Methods in Perl
 
   use Math::Vec qw(NewVec);
   $v = NewVec(0,1,2);
+  @res = $v->Cross([1,2.5,0]);
+  $p = NewVec(@res);
+  $q = $p->Dot([0,1,0]);
+
+  or
+
+  use Math::Vec qw(:terse);
+  $v = V(0,1,2);
+  $q = ($v x [1,2.5,0]) * [0,1,0];
 
 =head1 NOTICE
 
@@ -25,7 +34,9 @@ if you are trying to use this in a production environment.
 
 =head1 AUTHOR
 
-Eric Wilhelm <ewilhelm at sbcglobal dot net>
+Eric L. Wilhelm <ewilhelm at cpan dot org>
+
+http://scratchcomputing.com
 
 =head1 DESCRIPTION
 
@@ -41,7 +52,7 @@ typically return a list.
 
 =head1 COPYRIGHT NOTICE
 
-Copyright (C) 2003 Eric Wilhelm
+Copyright (C) 2003-2006 Eric Wilhelm
 
 portions Copyright 2003 Wayne M. Syvinski
 
@@ -65,56 +76,43 @@ You may use this software under one of the following licenses:
   (2) Artistic License 
     (found at http://www.perl.com/pub/language/misc/Artistic.html)
 
-=head1 Dependencies
-
-  Math::Complex;
-
-=head1 INSTALLATION
-
-To install this module, type the following.
-
-  perl Makefile.PL
-  make
-  make test
-  make install
-
-Note that the tests currently do very little.  If you would like to
-write some tests, I would be happy to include them in the distribution.
-
 =head1 SEE ALSO
 
   Math::Vector
 
-=head1 CHANGES
-
-  0.01
-    First Public Release
-
-  0.02
-    Fixed incorrect DotProduct() (thanks to Nao-Yuki Tanabe.)
-    Added length != 0 check to Comp()
-
 =cut
 
 ########################################################################
 
-
-require Exporter;
-@ISA='Exporter';
-@EXPORT_OK = qw (
-	NewVec
-	);
-
 use strict;
+use warnings;
 use Carp;
 use Math::Complex;
+
+require Exporter;
+our @ISA='Exporter';
+our @terse_exp = qw(
+	V
+	U
+	X
+	Y
+	Z
+	);
+our @EXPORT_OK = qw(
+	NewVec
+	V
+	U
+	X
+	Y
+	Z
+	); 
+our %EXPORT_TAGS = (
+	terse => [@terse_exp],
+	);
 
 ########################################################################
 
 =head1 Constructor
-
-=cut
-########################################################################
 
 =head2 new
 
@@ -123,8 +121,8 @@ where $z is optional.  Note the feed-me-list, get-back-reference syntax
 here.  This is the opposite of the rest of the methods for a good
 reason (it allows nesting of function calls.)
 
-Implied zeros are a strong theme in this module, so it may not do well
-under the warnings pragma.  I see this as part of the adventure.
+The z value is optional, (and so are x and y.)  Undefined values are
+silently translated into zeros upon construction.
 
   $vec = Math::Vec->new($x, $y, $z);
 
@@ -132,7 +130,7 @@ under the warnings pragma.  I see this as part of the adventure.
 sub new {
 	my $caller = shift;
 	my $class = ref($caller) || $caller;
-	my $self = [map({defined($_) ? $_ : 0} @_)];
+	my $self = [map({defined($_) ? $_ : 0} @_[0,1,2])];
 	bless($self, $class);
 	return($self);
 } # end subroutine new definition
@@ -161,6 +159,324 @@ sub NewVec {
 } # end subroutine NewVec definition
 ########################################################################
 
+=head1 Terse Functions
+
+These are all one-letter shortcuts which are imported to your namespace
+with the :terse flag.
+
+  use Math::Vec qw(:terse);
+
+=head2 V
+
+This is the same as Math::Vec->new($x,$y,$z).
+
+  $vec = V($x, $y, $z);
+
+=cut
+sub V {
+	return(Math::Vec->new(@_));
+} # end subroutine V definition
+########################################################################
+
+=head2 U
+
+Shortcut to V($x,$y,$z)->UnitVector()
+
+  $unit = U($x, $y, $z);
+
+This will also work if called with a vector object:
+
+  $unit = U($vector);
+
+=cut
+sub U {
+	my $v;
+	if(ref($_[0])) {
+		$v = vec_check($_[0]);
+	}
+	else {
+		$v = V(@_);
+	}
+	return(V($v->UnitVector()));
+} # end subroutine U definition
+########################################################################
+
+=head2 X
+
+Returns an x-axis unit vector.
+
+  $xvec = X();
+
+=cut
+sub X {
+	V(1,0,0);
+} # end subroutine X definition
+########################################################################
+
+=head2 Y
+
+Returns a y-axis unit vector.
+
+  $yvec = Y();
+
+=cut
+sub Y {
+	V(0,1,0);
+} # end subroutine Y definition
+########################################################################
+
+=head2 Z
+
+Returns a z-axis unit vector.
+
+  $zvec = Z();
+
+=cut
+sub Z {
+	V(0,0,1);
+} # end subroutine Z definition
+########################################################################
+
+=head1 Overloading
+
+Best used with the :terse functions, the Overloading scheme introduces
+an interface which is unique from the Methods interface.  Where the
+methods take references and return lists, the overloaded operators will
+return references.  This allows vector arithmetic to be chained together
+more easily.  Of course, you can easily dereference these with @{$vec}.
+
+The following sections contain equivelant expressions from the longhand
+and terse interfaces, respectively.
+
+=head2 Negation:
+
+  @a = NewVec->(0,1,1)->ScalarMult(-1);
+  @a = @{-V(0,1,1)};
+
+=head2 Stringification:
+
+This also performs concatenation and other string operations.
+
+  print join(", ", 0,1,1), "\n";
+
+  print V(0,1,1), "\n";
+
+  $v = V(0,1,1);
+  print "$v\n";
+  print "$v" . "\n";
+  print $v, "\n";
+
+=head2 Addition:
+
+  @a = NewVec(0,1,1)->Plus([2,2]);
+
+  @a = @{V(0,1,1) + V(2,2)};
+
+  # only one argument needs to be blessed:
+  @a = @{V(0,1,1) + [2,2]};
+
+  # and which one is blessed doesn't matter:
+  @a = @{[0,1,1] + V(2,2)};
+
+=head2 Subtraction:
+
+  @a = NewVec(0,1,1)->Minus([2,2]);
+
+  @a = @{[0,1,1] - V(2,2)};
+
+=head2 Scalar Multiplication:
+
+  @a = NewVec(0,1,1)->ScalarMult(2);
+
+  @a = @{V(0,1,1) * 2};
+
+  @a = @{2 * V(0,1,1)};
+
+=head2 Scalar Division:
+
+  @a = NewVec(0,1,1)->ScalarMult(1/2);
+
+  # order matters!
+  @a = @{V(0,1,1) / 2};
+
+=head2 Cross Product:
+
+  @a = NewVec(0,1,1)->Cross([0,1]);
+
+  @a = @{V(0,1,1) x [0,1]};
+
+  @a = @{[0,1,1] x V(0,1)};
+
+=head2 Dot Product:
+
+Also known as the "Scalar Product".
+
+  $a = NewVec(0,1,1)->Dot([0,1]);
+
+  $a = V(0,1,1) * [0,1];
+
+Note:  Not using the '.' operator here makes everything more efficient.
+I know, the * is not a dot, but at least it's a mathematical operator
+(perl does some implied string concatenation somewhere which drove me to
+avoid the dot.)
+
+=head2 Comparison:
+
+The == and != operators will compare vectors for equal direction and
+magnitude.  No attempt is made to apply tolerance to this equality.
+
+=head2 Length:
+
+  $a = NewVec(0,1,1)->Length();
+
+  $a = abs(V(0,1,1));
+
+=head2 Vector Projection:
+
+This one is a little different.  Where the method is written
+$a->Proj($b) to give the projection of $b onto $a, this reads like you
+would say it (b projected onto a):  $b>>$a.
+
+  @a = NewVec(0,1,1)->Proj([0,0,1]);
+
+  @a = @{V(0,0,1)>>[0,1,1]};
+
+=head1 Chaining Operations
+
+The above examples simply show how to go from the method interface to
+the overloaded interface, but where the overloading really shines is in
+chaining multiple operations together.  Because the return values from
+the overloaded operators are all references, you dereference them only
+when you are done.
+
+=head2 Unit Vector left of a line
+
+This comes from the CAD::Calc::line_to_rectangle() function.
+
+  use Math::Vec qw(:terse);
+  @line = ([0,1],[1,0]);
+  my ($a, $b) = map({V(@$_)} @line);
+  $unit = U($b - $a);
+  $left = $unit x -Z();
+
+=head2 Length of a cross product
+
+  $length = abs($va x $vb);
+
+=head2 Vectors as coordinate axes
+
+This is useful in drawing eliptical arcs using dxf data.
+
+  $val = 3.14159;                             # the 'start parameter'
+  @c = (14.15973317961194, 6.29684276451746); # codes 10, 20, 30
+  @e = (6.146127847120538, 0);                # codes 11, 21, 31
+  @ep = @{V(@c) + \@e};                       # that's the axis endpoint
+  $ux = U(@e);                                # unit on our x' axis
+  $uy = U($ux x -Z());                       # y' is left of x'
+  $center = V(@c);
+  # autodesk gives you this:
+  @pt = ($a * cos($val), $b * sin($val));
+  # but they don't tell you about the major/minor axis issue:
+  @pt = @{$center + $ux * $pt[0] + $uy * $pt[1]};;
+
+=head1 Precedence
+
+The operator precedence is going to be whatever perl wants it to be.  I
+have not yet investigated this to see if it matches standard vector
+arithmetic notation.  If in doubt, use parentheses.
+
+One item of note here is that the 'x' and '*' operators have the same
+precedence, so the leftmost wins.  In the following example, you can get
+away without parentheses if you have the cross-product first.
+
+  # dot product of a cross product:
+  $v1 x $v2 * $v3
+  ($v1 x $v2) * $v3
+
+  # scalar crossed with a vector (illegal!)
+  $v3 * $v1 x $v2
+
+=cut
+
+use overload
+	'neg' => sub {
+		return(V($_[0]->ScalarMult(-1)));
+	},
+	'""' => sub {
+		return(join(",", @{$_[0]}));
+	},
+	'+' => sub {
+		my ($v, $arg) = @_;
+		$arg = vec_check($arg);
+		return(V($v->Plus($arg)));
+	},
+	'-' => sub {
+		my ($v, $arg, $flip) = @_;
+		$arg = vec_check($arg);
+		$flip and (($v, $arg) = ($arg, $v));
+		return(V($v->Minus($arg)));
+	},
+	'*' => sub {
+		my($v, $arg) = @_;
+		ref($arg) and
+			return($v->Dot($arg));
+		return(V($v->ScalarMult($arg)));
+	},
+	'/' => sub {
+		my($v, $arg, $flip) =  @_;
+		$flip and croak("cannot divide by vector");
+		$arg or croak("cannot divide vector by zero");
+		return(V($v->ScalarMult(1 / $arg)));
+	},
+	'x' => sub {
+		my ($v, $arg, $flip) = @_;
+		$arg = vec_check($arg);
+		$flip and (($v, $arg) = ($arg, $v));
+		return(V($v->Cross($arg)));
+	},
+	'==' => sub {
+		my ($v, $arg) = @_;
+		$arg = vec_check($arg);
+		for(my $i = 0; $i < 3; $i++) {
+			($v->[$i] == $arg->[$i]) or return(0);
+		}
+		return(1);
+	},
+	'!=' => sub {
+		my ($v, $arg) = @_;
+		return(! ($v == $arg));
+	},
+	'abs' => sub {
+		return($_[0]->Length());
+	},
+	'>>' => sub {
+		my ($v, $arg, $flip) = @_;
+		$arg = vec_check($arg);
+		$flip and (($v, $arg) = ($arg, $v));
+		return(V($arg->Proj($v)));
+	},
+	;
+# check and return a vector (or array reference turns into a vector.)
+# also serves to initialize Z-coordinate.
+sub vec_check {
+	my $arg = shift;
+	if(ref($arg)) {
+		if(ref($arg) eq "ARRAY") {
+			$arg = V(@$arg);
+		}
+		else {
+			eval{$arg->isa('Math::Vec')};
+			$@ and 
+				croak("cannot use $arg as a vector");
+		}
+	}
+	else {
+		croak("cannot use $arg as a vector");
+	}
+	return($arg);
+} # end subroutine vec_check definition
+########################################################################
+
 =head1 Methods
 
 The typical theme is that methods require array references and return
@@ -186,34 +502,32 @@ a fairly limited amount of manipulation, but vector math is not
 complicated stuff.  Hopefully, you can save at least two lines of code
 per calculation using this module.
 
-=cut
-########################################################################
-
 =head2 Dot
 
-Alias to DotProduct()
+Returns the dot product of $vec 'dot' $othervec.
 
   $vec->Dot($othervec);
 
 =cut
 sub Dot {
 	my $self = shift;
-	return($self->DotProduct(@_));
+	my ($operand) = @_;
+	$operand = vec_check($operand);
+	my @r = map( {$self->[$_] * $operand->[$_]} 0,1,2);
+	return( $r[0] + $r[1] + $r[2]);
 } # end subroutine Dot definition
 ########################################################################
 
 =head2 DotProduct
 
-Returns the dot product of $vec 'dot' $othervec.
+Alias to Dot()
 
-  $vec->DotProduct($othervec);
+  $number = $vec->DotProduct($othervec);
 
 =cut
 sub DotProduct {
-	my Math::Vec $self = shift;
-	my ($operand) = @_;
-	my @r = map( {$self->[$_] * $operand->[$_]} 0,1,2);
-	return( $r[0] + $r[1] + $r[2]);
+	my $self = shift;
+	return($self->Dot(@_));
 } # end subroutine DotProduct definition
 ########################################################################
 
@@ -221,12 +535,15 @@ sub DotProduct {
 
 Returns $vec x $other_vec
 
-  $vec->Cross($other_vec);
+  @list = $vec->Cross($other_vec);
+  # or, to use the result as a vec:
+  $cvec = NewVec($vec->Cross($other_vec));
 
 =cut
 sub Cross {
 	my $a = shift;
 	my $b = shift;
+	$b = vec_check($b);
 	my $x = (($a->[1] * $b->[2]) - ($a->[2] * $b->[1]));
 	my $y = (($a->[2] * $b->[0]) - ($a->[0] * $b->[2]));
 	my $z = (($a->[0] * $b->[1]) - ($a->[1] * $b->[0]));
@@ -235,6 +552,9 @@ sub Cross {
 ########################################################################
 
 =head2 CrossProduct
+
+Alias to Cross() (should really strip out all of this clunkiness and go
+to operator overloading, but that gets into other hairiness.)
 
   $vec->CrossProduct();
 
@@ -255,7 +575,7 @@ Returns the length of $vec
 sub Length {
 	my Math::Vec $self = shift;
 	my $sum;
-	map( {$sum+=$_} map({$_** 2} @$self) );
+	map( {$sum+=$_**2} @$self );
 	return(sqrt($sum));
 } # end subroutine Length definition
 ########################################################################
@@ -314,7 +634,7 @@ sub Minus {
 	my @list = @_;
 	my @result = @$self;
 	foreach my $vec (@list) {
-		@result = map( {$result[$_] - $vec->[$_]} 0,1,2);
+		@result = map( {$result[$_] - $vec->[$_]} 0..$#$vec);
 		}
 	return(@result);
 } # end subroutine Minus definition
@@ -375,8 +695,8 @@ sub Plus {
 	my @list = @_;
 	my @result = @$self;
 	foreach my $vec (@list) {
-		@result = map( {$result[$_] + $vec->[$_]} 0,1,2);
-		}
+		@result = map( {$result[$_] + $vec->[$_]} 0..$#$vec);
+	}
 	return(@result);
 } # end subroutine Plus definition
 ########################################################################
@@ -511,7 +831,7 @@ of $B along $A.)
 =cut
 sub Comp {
 	my $self = shift;
-	my $B = shift;
+	my $B = vec_check(shift);
 	my $length = $self->Length();
 	$length || croak("cannot Comp() vector without length");
 	return($self->Dot($B) / $length);
@@ -534,7 +854,8 @@ sub Proj {
 
 =head2 PerpFoot
 
-Returns a point on line $A,$B which is as close to $pt as possible (and therefore perpendicular to the line.
+Returns a point on line $A,$B which is as close to $pt as possible (and
+therefore perpendicular to the line.)
 
   $pt->PerpFoot($A, $B);
 
@@ -556,16 +877,13 @@ shown here simply because I intended to fully preserve the function
 names from the original Math::Vector module written by Wayne M.
 Syvinski.
 
-=cut
-########################################################################
-
 =head2 TripleProduct
 
   $vec->TripleProduct();
 
 =cut
 sub TripleProduct {
-
+	die("not written");
 } # end subroutine TripleProduct definition
 ########################################################################
 
@@ -575,6 +893,7 @@ sub TripleProduct {
 
 =cut
 sub IJK {
+	die("not written");
 
 } # end subroutine IJK definition
 ########################################################################
@@ -585,6 +904,7 @@ sub IJK {
 
 =cut
 sub OrdTrip {
+	die("not written");
 
 } # end subroutine OrdTrip definition
 ########################################################################
@@ -595,6 +915,7 @@ sub OrdTrip {
 
 =cut
 sub STV {
+	die("not written");
 
 } # end subroutine STV definition
 ########################################################################
@@ -605,6 +926,7 @@ sub STV {
 
 =cut
 sub Equil {
+	die("not written");
 
 } # end subroutine Equil definition
 ########################################################################
