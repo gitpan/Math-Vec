@@ -1,5 +1,5 @@
 package Math::Vec;
-our $VERSION   = '0.03';
+our $VERSION   = '0.031';
 
 =pod
 
@@ -192,7 +192,7 @@ This will also work if called with a vector object:
 sub U {
 	my $v;
 	if(ref($_[0])) {
-		$v = vec_check($_[0]);
+		$v = _vec_check($_[0]);
 	}
 	else {
 		$v = V(@_);
@@ -407,12 +407,12 @@ use overload
 	},
 	'+' => sub {
 		my ($v, $arg) = @_;
-		$arg = vec_check($arg);
+		$arg = _vec_check($arg);
 		return(V($v->Plus($arg)));
 	},
 	'-' => sub {
 		my ($v, $arg, $flip) = @_;
-		$arg = vec_check($arg);
+		$arg = _vec_check($arg);
 		$flip and (($v, $arg) = ($arg, $v));
 		return(V($v->Minus($arg)));
 	},
@@ -430,13 +430,13 @@ use overload
 	},
 	'x' => sub {
 		my ($v, $arg, $flip) = @_;
-		$arg = vec_check($arg);
+		$arg = _vec_check($arg);
 		$flip and (($v, $arg) = ($arg, $v));
 		return(V($v->Cross($arg)));
 	},
 	'==' => sub {
 		my ($v, $arg) = @_;
-		$arg = vec_check($arg);
+		$arg = _vec_check($arg);
 		for(my $i = 0; $i < 3; $i++) {
 			($v->[$i] == $arg->[$i]) or return(0);
 		}
@@ -451,14 +451,15 @@ use overload
 	},
 	'>>' => sub {
 		my ($v, $arg, $flip) = @_;
-		$arg = vec_check($arg);
+		$arg = _vec_check($arg);
 		$flip and (($v, $arg) = ($arg, $v));
 		return(V($arg->Proj($v)));
 	},
 	;
-# check and return a vector (or array reference turns into a vector.)
+
+# Check and return a vector (or array reference turns into a vector.)
 # also serves to initialize Z-coordinate.
-sub vec_check {
+sub _vec_check {
 	my $arg = shift;
 	if(ref($arg)) {
 		if(ref($arg) eq "ARRAY") {
@@ -474,7 +475,7 @@ sub vec_check {
 		croak("cannot use $arg as a vector");
 	}
 	return($arg);
-} # end subroutine vec_check definition
+} # end subroutine _vec_check definition
 ########################################################################
 
 =head1 Methods
@@ -512,7 +513,7 @@ Returns the dot product of $vec 'dot' $othervec.
 sub Dot {
 	my $self = shift;
 	my ($operand) = @_;
-	$operand = vec_check($operand);
+	$operand = _vec_check($operand);
 	my @r = map( {$self->[$_] * $operand->[$_]} 0,1,2);
 	return( $r[0] + $r[1] + $r[2]);
 } # end subroutine Dot definition
@@ -543,7 +544,7 @@ Returns $vec x $other_vec
 sub Cross {
 	my $a = shift;
 	my $b = shift;
-	$b = vec_check($b);
+	$b = _vec_check($b);
 	my $x = (($a->[1] * $b->[2]) - ($a->[2] * $b->[1]));
 	my $y = (($a->[2] * $b->[0]) - ($a->[0] * $b->[2]));
 	my $z = (($a->[0] * $b->[1]) - ($a->[1] * $b->[0]));
@@ -831,7 +832,7 @@ of $B along $A.)
 =cut
 sub Comp {
 	my $self = shift;
-	my $B = vec_check(shift);
+	my $B = _vec_check(shift);
 	my $length = $self->Length();
 	$length || croak("cannot Comp() vector without length");
 	return($self->Dot($B) / $length);
