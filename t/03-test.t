@@ -9,7 +9,7 @@ use warnings;
 
 use Test::More;
 BEGIN { plan tests => 22 };
-use Math::Vec qw(NewVec :terse);
+use Math::Vec qw(:terse NewVec);
 ok(1, "require"); # If we made it this far, we're ok.
 
 #########################

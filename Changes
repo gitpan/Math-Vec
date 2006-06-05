@@ -1,3 +1,8 @@
+0.04
+	test 03 workaround for Exporter.pm transient bug
+	Exporter rework
+	fixed nit in compatibility Makefile.PL
+
 0.03
 	Setup to run clean under 'use warnings'.
 	Added overloading and :terse functions.

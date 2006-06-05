@@ -1,5 +1,5 @@
 package Math::Vec;
-our $VERSION   = '0.031';
+our $VERSION   = '0.04';
 
 =pod
 
@@ -89,8 +89,14 @@ use warnings;
 use Carp;
 use Math::Complex;
 
-require Exporter;
-our @ISA='Exporter';
+BEGIN {
+use Exporter;
+*{import} = \&Exporter::import;
+}
+our @EXPORT = ();
+our @EXPORT_OK = qw(
+	NewVec
+	);
 our @terse_exp = qw(
 	V
 	U
@@ -98,17 +104,11 @@ our @terse_exp = qw(
 	Y
 	Z
 	);
-our @EXPORT_OK = qw(
-	NewVec
-	V
-	U
-	X
-	Y
-	Z
-	); 
 our %EXPORT_TAGS = (
 	terse => [@terse_exp],
 	);
+Exporter::export_ok_tags(keys(%EXPORT_TAGS));
+
 
 ########################################################################
 

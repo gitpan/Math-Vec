@@ -1,8 +1,7 @@
 ---
 name: Math-Vec
-version: 0.031
-author:
-  - Eric L. Wilhelm <ewilhelm at cpan dot org>
+version: 0.04
+author: []
 abstract: Object-Oriented Vector Math Methods in Perl
 license: perl
 resources:
@@ -12,8 +11,8 @@ requires:
 provides:
   Math::Vec:
     file: lib/Math/Vec.pm
-    version: 0.031
-generated_by: Module::Build version 0.2704
+    version: 0.04
+generated_by: Module::Build version 0.28
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html
   version: 1.2
