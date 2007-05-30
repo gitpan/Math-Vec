@@ -1,5 +1,5 @@
 package Math::Vec;
-our $VERSION   = '0.04';
+our $VERSION   = '1.01';
 
 =pod
 
@@ -87,7 +87,25 @@ You may use this software under one of the following licenses:
 use strict;
 use warnings;
 use Carp;
-use Math::Complex;
+
+{
+package Math::Vec::Support;
+# Dropping the usage of Math::Complex acos() because we don't want any
+# complex numbers to happen due to errors in the whee bits.
+sub acos {
+	my ($z) = @_;
+
+	my $abs = abs($z);
+	if($abs > 1) {
+		# just a little sanity checking
+		(($abs - 1) > 2**-16) and die "bad input to acos($z)";
+		# make it safe
+		$z = ($z > 0) ? 1 : -1;
+	}
+
+	return CORE::atan2(CORE::sqrt(1-$z*$z), $z);
+}
+}
 
 BEGIN {
 use Exporter;
@@ -668,7 +686,11 @@ sub InnerAngle {
 	my $dot_prod = $A->Dot($B);
 	my $m_A = $A->Length();
 	my $m_B = $B->Length();
-	return(acos($dot_prod / ($m_A * $m_B)) );
+	# NOTE occasionally returned an answer with a very small imaginary
+	# part (for d/(A*B) values very slightly under -1 or very slightly
+	# over 1.)  Large imaginary results are not possible with vector 
+	# inputs, so we can just drop the imaginary bit.
+	return(Math::Vec::Support::acos($dot_prod / ($m_A * $m_B)) );
 } # end subroutine InnerAngle definition
 ########################################################################
 
@@ -933,3 +955,4 @@ sub Equil {
 ########################################################################
 
 1;
+# vim:ts=4:sw=4:noet
